@@ -3,6 +3,7 @@ import sys
 import time
 import signal
 import os
+import ConfigParser
 
 # Create the bodo configuration out of environment variables
 home = os.getenv('HOME')
@@ -15,15 +16,15 @@ with open(os.path.join(home, '.bodo'),'w') as f:
     f.write('[Credentials]\naws_access_key_id = ' + aws_access_key_id + '\naws_secret_access_key = ' + aws_secret_access_key + '\n')
 from area53 import route53
 
+# Load configuration
+Config = ConfigParser.ConfigParser()
+try:
+    Config.read(os.path.join(home, '.dyndns53'))
+except:
+    print 'ERROR: Failed to parse %s' % os.path.join(home, '.dyndns53')
+
 # Time in between two updates in seconds
 timeout=900
-
-# Configure this as a dict where keys are domains and values are a list of subdomains
-dns_dict = {
-    'gherzan.com':['', 'www', 'download', 'file', 'nas', 'note', 'video', 'dbadmin', 'audio'],
-    'gherzan.ro':['', 'www'],
-    'opelege.ro':['', 'www']
-    }
 
 def signal_handler(signal, frame):
     print '\nSIGINT caught!'
@@ -38,8 +39,18 @@ signal.signal(signal.SIGINT, signal_handler)
 
 while True:
     print "\nNew trigger: %s\n=====================================" % time.asctime(time.localtime(time.time()))
-    for domain in dns_dict:
-        for subdomain in dns_dict[domain]:
+    for domain in Config.sections():
+        subdomains = []
+        try:
+            subdomains = Config.get(domain, 'subdomains').split()
+        except:
+            pass
+        try:
+            if Config.getboolean(domain, "root"):
+                subdomains.append('')
+        except:
+            pass
+        for subdomain in subdomains:
             if subdomain:
                 fqdn = '%s.%s' % (subdomain, domain)
             else:
