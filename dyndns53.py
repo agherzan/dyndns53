@@ -1,4 +1,4 @@
-import requests
+import urllib, json
 import sys
 import time
 import signal
@@ -32,8 +32,8 @@ def signal_handler(signal, frame):
 
 def get_public_ip():
     ''' Returns the puiblic IP of '''
-    r = requests.get('http://icanhazip.com')
-    return r.text.rstrip()
+    data = json.loads(urllib.urlopen("http://ip.jsontest.com/").read())
+    return data["ip"]
 
 signal.signal(signal.SIGINT, signal_handler)
 
